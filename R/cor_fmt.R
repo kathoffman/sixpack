@@ -15,6 +15,36 @@ cor_fmt_1g <- function(df,
   return(out)
 }
 
+#' Format correlations for two different groups for use in a heat map
+#'
+#' @param df A data frame or tibble containing only the columns you want to calculate the correlations of, and a group identifier column.
+#' @param group A string containing the name of a column which identifies the two groups you want correlations computed.
+#'
+#' @importFrom dplyr arrange n filter rowwise row_number
+#' @return  a tidy tibble ready for plotting
+#'
+#' @examples format_cor_2groups(mtcars, "am")
+#'
+cor_fmt_2g <- function(df, cor_method, group){
+  stopifnot(length(levels(factor(df[[group]]))) == 2)
+  g1 <- levels(factor(df[[group]]))[[1]]
+  g2 <- levels(factor(df[[group]]))[[2]]
+  g1_df <- df[df[[group]] == g1,]
+  g1_df <- g1_df[,-which(names(g1_df) == group)]
+  g2_df <- df[df[[group]] == g2,]
+  g2_df <- g2_df[,-which(names(g2_df) == group)]
+  g1_cor <- cor_fmt_1g(g1_df, cor_method = cor_method)
+  g2_cor <- cor_fmt_1g(g2_df, cor_method = cor_method)
+  g1_cor$key <- apply(g1_cor[ ,c("measure1","measure2")], 1, paste, collapse = "-")
+  g1_cor <- dplyr::group_by(dplyr::arrange(g1_cor, measure1, measure2), key)
+  g1_cor <- dplyr::filter(g1_cor, dplyr::row_number() == 1)
+  g2_cor$key <- apply(g2_cor[ ,c("measure1","measure2")], 1, paste, collapse = "-")
+  g2_cor <- dplyr::group_by(dplyr::arrange(g2_cor, measure1, measure2), key)
+  g2_cor <- dplyr::filter(g2_cor, dplyr::row_number() == dplyr::n(), measure1 != measure2)
+  out <- dplyr::full_join(g1_cor, g2_cor)
+  return(out)
+}
+
 
 #' importFrom("stats", "p.adjust")
 #'
