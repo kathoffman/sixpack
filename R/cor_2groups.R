@@ -5,11 +5,10 @@
 #'
 #' @importFrom dplyr arrange n filter rowwise row_number
 #' @return  a tidy tibble ready for plotting
-#' @export
 #'
 #' @examples format_cor_2groups(mtcars, "am")
 #'
-format_cor_2groups <- function(df, group){
+cor_fmt_2g <- function(df, cor_method, group){
   stopifnot(length(levels(factor(df[[group]]))) == 2)
   g1 <- levels(factor(df[[group]]))[[1]]
   g2 <- levels(factor(df[[group]]))[[2]]
@@ -17,8 +16,8 @@ format_cor_2groups <- function(df, group){
   g1_df <- g1_df[,-which(names(g1_df) == group)]
   g2_df <- df[df[[group]] == g2,]
   g2_df <- g2_df[,-which(names(g2_df) == group)]
-  g1_cor <- format_cors(g1_df, mult_comp = T)
-  g2_cor <- format_cors(g2_df, mult_comp = T)
+  g1_cor <- cor_fmt_1g(g1_df, cor_method = cor_method)
+  g2_cor <- cor_fmt_1g(g2_df, cor_method = cor_method)
   g1_cor$key <- apply(g1_cor[ ,c("measure1","measure2")], 1, paste, collapse = "-")
   g1_cor <- dplyr::group_by(dplyr::arrange(g1_cor, measure1, measure2), key)
   g1_cor <- dplyr::filter(g1_cor, dplyr::row_number() == 1)
@@ -38,8 +37,8 @@ format_cor_2groups <- function(df, group){
 #' @export
 #'
 #' @examples plot_cor_2groups(mtcars, "am")
-plot_cor_2groups <- function(df, group){
-  plot_df <-  format_cor_2groups(df, group)
+plot_cor_2groups <- function(df, cor_method, group){
+  plot_df <-  cor_fmt(df, cor_method = cor_method, group = group)
   g1 <- levels(factor(df[[group]]))[[1]]
   g2 <- levels(factor(df[[group]]))[[2]]
   ggplot(plot_df, aes(measure1,measure2, col=r_if_sig, alpha=sig_p)) + ## to get the rect filled
@@ -49,7 +48,6 @@ plot_cor_2groups <- function(df, group){
     theme_classic()+
     coord_equal() +
     guides(alpha=F) +
-    #scale_color_gradient2(mid="#FBFEF9",low="#0C6291",high="#A63446", limits=c(-1,1))  +
     viridis::scale_color_viridis(limits=c(-1,1), na.value="gray70")+
     scale_x_discrete(expand=c(0,0)) +
     scale_y_discrete(expand=c(0,0)) +
